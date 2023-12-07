@@ -540,3 +540,25 @@ command:
     cat "$PLAINBOX_SESSION_SHARE/ubuntu_drivers_list_oem_check"
   fi
   true
+
+plugin: shell
+category_id: com.canonical.plainbox::miscellanea
+estimated_duration: 0.2
+id: miscellanea/grub_file_check
+requires:
+  "Ubuntu Core" not in lsb.description
+  cpuinfo.platform in ("x86_64", "aarch64", "armhf")
+  bootloader.name == "grub"
+command:
+  declare -A DICT_ARCH
+  DICT_ARCH=( [x86_64]='x86_64' [aarch64]='arm64' [armhf]='armS' )
+  FILE_CORE="/boot/grub/${DICT_ARCH[$(uname -m)]}-efi/core.efi"
+  if [ -e "${FILE_CORE}" ]; then
+    echo "The file ${FILE_CORE} exist, shim and grub can be upgraded."
+    true
+  else
+    echo "Due to the absence of the file ${FILE_CORE}, upgrading shim and grub becomes impossible."
+    false
+  fi
+_summary: Check if the file core.efi exist to make sure shim and grub upgradedable
+_description: Check if the file core.efi in /boot/grub exist so that the grub and shim can be upgraded correctly
