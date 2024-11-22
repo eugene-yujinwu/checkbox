@@ -78,7 +78,7 @@ def get_ip_mac(interface):
 
         return ip_a, mac_a
     except ValueError as e:
-        sys.exit(f"Error: {e}")
+        raise SystemExit(f"Error: {e}")
 
 
 # set the rtc wake time to bring up system in case the wake-on-lan failed
@@ -94,9 +94,9 @@ def set_rtc_wake(wake_time):
     try:
         subprocess.check_output(command, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        sys.exit(f"Failed to set RTC wake: {e.output.decode().strip()}")
+        raise SystemExit(f"Failed to set RTC wake: {e.output.decode().strip()}")
     except Exception as e:
-        sys.exit(f"An unexpected error occurred: {e}")
+        raise SystemExit(f"An unexpected error occurred: {e}")
 
 
 # try to suspend(s3) or power off(s5) the system
@@ -132,7 +132,7 @@ def bring_up_system(way, time):
         set_rtc_wake(time)
     else:
         # try to wake up the system other than RTC which not support
-        sys.exit(f"we don't have the way {way} to bring up the system now."
+        raise SystemExit(f"we don't have the way {way} to bring up the system now."
                  "Some error happened.")
 
 
@@ -143,7 +143,13 @@ def write_timestamp(timestamp_file):
         f.flush()
 
 
-def main():
+def parse_args(args=sys.argv[1:]):
+    """
+    command line arguments parsing
+
+    :param args: arguments from sys
+    :type args: sys.argv
+    """
     parser = argparse.ArgumentParser(
         description="Parse command line arguments.")
 
@@ -162,7 +168,11 @@ def main():
     parser.add_argument("--timestamp_file", type=str,
                         help="The file to store the timestamp of test start.")
 
-    args = parser.parse_args()
+    return parser.parse_args(args)
+
+
+def main():
+    args = parse_args()
 
     logging.basicConfig(
         level=logging.DEBUG,
@@ -181,7 +191,7 @@ def main():
     logging.info(f"ip: {ip}, mac: {mac}")
 
     if ip is None:
-        sys.exit("Error: failed to get the ip address.")
+        raise SystemExit("Error: failed to get the ip address.")
 
     url = f"http://{args.target}"
     req = {
@@ -198,14 +208,14 @@ def main():
         result_dict = resp.json()
 
     except requests.exceptions.ConnectionError as e:
-        sys.exit(f"Connection error: {e}")
+        raise SystemExit(f"Connection error: {e}")
     except requests.exceptions.HTTPError as e:
-        sys.exit(f"HTTP error: {e}")
+        raise SystemExit(f"HTTP error: {e}")
     except requests.exceptions.RequestException as e:
-        sys.exit(f"Request error: {e}")
+        raise SystemExit(f"Request error: {e}")
 
     if resp.status_code != 200 or result_dict['result'] != "success":
-        sys.exit(f"get the wrong response: {result_dict['result']}")
+        raise SystemExit(f"get the wrong response: {result_dict['result']}")
 
     # bring up the system. The time should be delay*retry*2
     bring_up_system("rtc", delay*retry*2)

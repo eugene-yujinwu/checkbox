@@ -28,8 +28,9 @@ def get_suspend_boot_time(type):
     # get the time stamp of the system resume from suspend for s3
     # or boot up for s5
     command = ["journalctl", "-b", "0", "--output=short-unix"]
-    result = subprocess.run(command, capture_output=True, text=True)
-    logs = result.stdout.splitlines()
+    result = subprocess.check_output(command, shell=False,
+                                     universal_newlines=True)
+    logs = result.splitlines()
 
     latest_system_back_time = None
 
@@ -47,13 +48,19 @@ def get_suspend_boot_time(type):
         logging.info(f"boot_time: {latest_system_back_time}")
         return latest_system_back_time
     else:
-        sys.exit("Invalid type. Please use s3 or s5.")
+        raise SystemExit("Invalid type. Please use s3 or s5.")
 
     if latest_system_back_time is None:
-        sys.exit("cannot find 'suspend exit' or boot time in kernel log")
+        raise SystemExit("cannot find 'suspend exit' or boot time in kernel log")
 
 
-def main():
+def parse_args(args=sys.argv[1:]):
+    """
+    command line arguments parsing
+
+    :param args: arguments from sys
+    :type args: sys.argv
+    """
     parser = argparse.ArgumentParser(
         description="Parse command line arguments.")
 
@@ -67,7 +74,11 @@ def main():
     parser.add_argument("--retry", type=int, default=3,
                         help="Number of retry attempts.")
 
-    args = parser.parse_args()
+    return parser.parse_args(args)
+
+
+def main():
+    args = parse_args()
 
     logging.basicConfig(
         level=logging.DEBUG,
@@ -97,10 +108,10 @@ def main():
     # the system was bring up by rtc other than Wake-on-lan
     expect_time_range = 1.5*max_retries*delay
     if time_difference > expect_time_range:
-        sys.exit(f"Time difference is {time_difference} greater than "
+        raise SystemExit(f"Time difference is {time_difference} greater than "
                  f"1.5*delay*retry {expect_time_range}")
     elif time_difference < 0:
-        sys.exit("Time difference is less than 0.")
+        raise SystemExit("Time difference is less than 0.")
     else:
         logging.info("Wake-on-lan workes well.")
         return True
