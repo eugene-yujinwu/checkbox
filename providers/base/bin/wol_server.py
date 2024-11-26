@@ -33,21 +33,21 @@ def send_wol_command(Wol_Info: dict):
     wake_type = Wol_Info["wake_type"]
 
     command_dict = {
-                    "g": f"wakeonlan {dut_mac}",
-                    "a": f"ping {dut_ip}",
+                    "g": "wakeonlan {}".format(dut_mac),
+                    "a": "ping {}".format(dut_ip),
                    }
 
     try:
-        logger.debug(f"Wake on lan command: {command_dict[wake_type]}")
+        logger.debug("Wake on lan command: {}".format(command_dict[wake_type]))
         output = subprocess.check_output(shlex.split(command_dict[wake_type]))
         logger.debug({output})
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"Error occurred in tasker_main: {e}")
+        logger.error("Error occurred in tasker_main: {}".format(e))
         return False
 
     except KeyError as e:
-        logger.error(f"Error occurred in tasker_main: {e}")
+        logger.error("Error occurred in tasker_main: {}".format(e))
         return False
 
     return True
@@ -64,8 +64,8 @@ def tasker_main(request: dict) -> dict:
             logger.error("Missing required fields: DUT_IP or delay")
             return {'result': 'error', 'message': 'Missing required fields'}
 
-        logger.info(f"Received request: {request}")
-        logger.info(f"DUT_IP: {dut_ip}")
+        logger.info("Received request: {}".format(request))
+        logger.info("DUT_IP: {}".format(dut_ip))
 
         # Starting the task in a separate thread
         thread = threading.Thread(target=run_task, args=(request, delay))
@@ -75,7 +75,8 @@ def tasker_main(request: dict) -> dict:
         return {'result': 'success'}
 
     except Exception as e:
-        logger.exception(f"Error occurred while processing the request: {e}")
+        logger.exception("Error occurred while processing the request: {}"
+                         .format(e))
         return {'result': 'error', 'message': str(e)}
 
 
@@ -85,11 +86,11 @@ def is_pingable(ip_address):
         command = ["ping", "-c", "1", "-W", "1", ip_address]
         output = subprocess.check_output(command, stderr=subprocess.STDOUT,
                                          universal_newlines=True)
-        logger.debug(f"ping: {output}")
+        logger.debug("ping: {}".format(output))
         return True
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
         # print("ping:", output)
-        logger.debug("An error occurred while ping the DUT: str{e}")
+        logger.debug("An error occurred while ping the DUT: str{}".format(e))
         return False
 
 
@@ -103,7 +104,7 @@ def run_task(data, delay):
 
     for attempt in range(retry_times):
         # logger.info("threading:", dut_mac)
-        logger.debug(f"retry times: {attempt}")
+        logger.debug("retry times: {}".format(attempt))
         time.sleep(delay)
 
         try:
@@ -117,14 +118,15 @@ def run_task(data, delay):
             time.sleep(delay)
             # ping dut
             if is_pingable(dut_ip):
-                logger.info(f"{dut_ip} is pingable, the DUT is back")
+                logger.info("{} is pingable, the DUT is back".format(dut_ip))
                 # logger.info("ping DUT to see if it had been waked up")
                 return True
             else:
-                logger.info(f"{dut_ip} is NOT pingable, the DUT is not back.")
+                logger.info("{} is NOT pingable, the DUT is not back."
+                            .format(dut_ip))
 
         except Exception as e:
-            logger.error(f"Error occurred in tasker_main: {e}")
+            logger.error("Error occurred in tasker_main: {}".format(e))
 
         # retry finished
     return False
