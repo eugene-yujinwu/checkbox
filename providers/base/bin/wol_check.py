@@ -10,7 +10,7 @@ import sys
 def get_timestamp(file):
     with open(file, "r") as f:
         saved_timestamp = float(f.read())
-        logging.info(f"saved_timestamp: {saved_timestamp}")
+        logging.info("saved_timestamp: {}".format(saved_timestamp))
     return saved_timestamp
 
 
@@ -39,19 +39,19 @@ def get_suspend_boot_time(type):
             if r"suspend exit" in log:
                 logging.debug(log)
                 latest_system_back_time = extract_timestamp(log)
-                logging.info(f"suspend time: {latest_system_back_time}")
+                logging.info("suspend time: {}".format(latest_system_back_time))
                 return latest_system_back_time
     elif type == "s5":
         # the first line of system boot up
         log = logs[0]
         latest_system_back_time = extract_timestamp(log)
-        logging.info(f"boot_time: {latest_system_back_time}")
+        logging.info("boot_time: {}".format(latest_system_back_time))
         return latest_system_back_time
     else:
         raise SystemExit("Invalid type. Please use s3 or s5.")
 
     if latest_system_back_time is None:
-        raise SystemExit("cannot find 'suspend exit' or boot time in kernel log")
+        raise SystemExit("not find 'suspend exit' or boot time in kernel log")
 
 
 def parse_args(args=sys.argv[1:]):
@@ -94,22 +94,23 @@ def main():
     delay = args.delay
     max_retries = args.retry
 
-    logging.info(f"Interface: {interface}")
-    logging.info(f"PowerType: {powertype}")
+    logging.info("Interface: {}".format(interface))
+    logging.info("PowerType: {}".format(powertype))
 
     test_start_time = float(get_timestamp(timestamp_file))
     system_back_time = float(get_suspend_boot_time(powertype))
 
     time_difference = system_back_time - test_start_time
 
-    logging.info(f"time difference: {time_difference}")
+    logging.info("time difference: {}".format(time_difference))
 
     # system_back_time - test_start_time > 1.5*max_retries*delay which meanse
     # the system was bring up by rtc other than Wake-on-lan
     expect_time_range = 1.5*max_retries*delay
     if time_difference > expect_time_range:
-        raise SystemExit(f"Time difference is {time_difference} greater than "
-                 f"1.5*delay*retry {expect_time_range}")
+        raise SystemExit("Time difference is {} greater than "
+                         "1.5*delay*retry {}".
+                         format(time_difference, expect_time_range))
     elif time_difference < 0:
         raise SystemExit("Time difference is less than 0.")
     else:
