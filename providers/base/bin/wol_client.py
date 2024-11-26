@@ -33,8 +33,8 @@ def request(method, url, retry=3, **kwargs):
     with Session() as session:
         session.mount("https://", HTTPAdapter(max_retries=retries))
         session.mount("http://", HTTPAdapter(max_retries=retries))
-        logging.info(f"Send {method} request to {url}")
-        logging.debug(f"Request parameter: {kwargs}")
+        logging.info("Send {} request to {}".format(method,url))
+        logging.debug("Request parameter: {}".format(kwargs))
 
         resp = session.request(method=method, url=url, **kwargs)
         logging.debug(resp.text)
@@ -78,7 +78,7 @@ def get_ip_mac(interface):
 
         return ip_a, mac_a
     except ValueError as e:
-        raise SystemExit(f"Error: {e}")
+        raise SystemExit("Error: {}".format(e))
 
 
 # set the rtc wake time to bring up system in case the wake-on-lan failed
@@ -94,9 +94,10 @@ def set_rtc_wake(wake_time):
     try:
         subprocess.check_output(command, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        raise SystemExit(f"Failed to set RTC wake: {e.output.decode().strip()}")
+        raise SystemExit("Failed to set RTC wake: {}"
+                         .format(e.output.decode().strip()))
     except Exception as e:
-        raise SystemExit(f"An unexpected error occurred: {e}")
+        raise SystemExit("An unexpected error occurred: {}".format(e))
 
 
 # try to suspend(s3) or power off(s5) the system
@@ -117,12 +118,12 @@ def s3_or_s5_system(type):
     }
 
     if type not in commands:
-        raise RuntimeError(f"Error: type should be s3 or s5(provided: {type})")
+        raise RuntimeError("Error: type should be s3 or s5(provided: {})".format(type))
 
     try:
         subprocess.check_output(commands[type], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Try to enter {type} failed: {e}")
+        raise RuntimeError("Try to enter {} failed: {}".format(type,e))
 
 
 # bring up the system by rtc or any other ways in case the wake-on-lan failed
@@ -132,8 +133,8 @@ def bring_up_system(way, time):
         set_rtc_wake(time)
     else:
         # try to wake up the system other than RTC which not support
-        raise SystemExit(f"we don't have the way {way} to bring up the system now."
-                 "Some error happened.")
+        raise SystemExit("we don't have the way {} to bring up the system,"
+                         "Some error happened.".format(way))
 
 
 # write the time stamp to a file to record the test start time
@@ -185,15 +186,15 @@ def main():
     delay = args.delay
     retry = args.retry
 
-    logging.info(f"Test network interface: {args.interface}")
+    logging.info("Test network interface: {}".format(args.interface))
     ip, mac = get_ip_mac(args.interface)
 
-    logging.info(f"ip: {ip}, mac: {mac}")
+    logging.info("ip: {}, mac: {}".format(ip,mac))
 
     if ip is None:
         raise SystemExit("Error: failed to get the ip address.")
 
-    url = f"http://{args.target}"
+    url = "http://{}".format(args.target)
     req = {
           "DUT_MAC": mac,
           "DUT_IP": ip,
@@ -208,14 +209,15 @@ def main():
         result_dict = resp.json()
 
     except requests.exceptions.ConnectionError as e:
-        raise SystemExit(f"Connection error: {e}")
+        raise SystemExit("Connection error: {}".format(e))
     except requests.exceptions.HTTPError as e:
-        raise SystemExit(f"HTTP error: {e}")
+        raise SystemExit("HTTP error: {}".format(e))
     except requests.exceptions.RequestException as e:
-        raise SystemExit(f"Request error: {e}")
+        raise SystemExit("Request error: {}".format(e))
 
     if resp.status_code != 200 or result_dict['result'] != "success":
-        raise SystemExit(f"get the wrong response: {result_dict['result']}")
+        raise SystemExit("get the wrong response: {}"
+                         .format(result_dict['result']))
 
     # bring up the system. The time should be delay*retry*2
     bring_up_system("rtc", delay*retry*2)
