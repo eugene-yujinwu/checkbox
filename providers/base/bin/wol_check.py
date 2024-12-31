@@ -17,11 +17,7 @@ def get_timestamp(file):
 def extract_timestamp(log_line):
     pattern = r"(\d+\.\d+)"
     match = re.search(pattern, log_line)
-
-    if match:
-        return float(match.group(1))
-    else:
-        return None
+    return float(match.group(1)) if match else None
 
 
 def get_suspend_boot_time(type):
@@ -39,7 +35,8 @@ def get_suspend_boot_time(type):
             if r"suspend exit" in log:
                 logging.debug(log)
                 latest_system_back_time = extract_timestamp(log)
-                logging.info("suspend time: {}".format(latest_system_back_time))
+                logging.info("suspend time: {}".
+                             format(latest_system_back_time))
                 return latest_system_back_time
     elif type == "s5":
         # the first line of system boot up
@@ -48,10 +45,10 @@ def get_suspend_boot_time(type):
         logging.info("boot_time: {}".format(latest_system_back_time))
         return latest_system_back_time
     else:
-        raise SystemExit("Invalid type. Please use s3 or s5.")
+        raise SystemExit("Invalid power type. Please use s3 or s5.")
 
     if latest_system_back_time is None:
-        raise SystemExit("not find 'suspend exit' or boot time in kernel log")
+        raise SystemExit("NOT find 'suspend exit' or boot time in kernel log")
 
 
 def parse_args(args=sys.argv[1:]):
@@ -106,11 +103,12 @@ def main():
 
     # system_back_time - test_start_time > 1.5*max_retries*delay which meanse
     # the system was bring up by rtc other than Wake-on-lan
-    expect_time_range = 1.5*max_retries*delay
+    expect_time_range = 1.5 * max_retries * delay
     if time_difference > expect_time_range:
-        raise SystemExit("Time difference is {} greater than "
-                         "1.5*delay*retry {}".
-                         format(time_difference, expect_time_range))
+        raise SystemExit(
+            "Time difference is {} greater than "
+            "1.5*delay*retry {}".format(time_difference, expect_time_range)
+        )
     elif time_difference < 0:
         raise SystemExit("Time difference is less than 0.")
     else:
