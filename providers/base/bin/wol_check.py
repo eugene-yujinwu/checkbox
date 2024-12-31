@@ -24,8 +24,9 @@ def get_suspend_boot_time(type):
     # get the time stamp of the system resume from suspend for s3
     # or boot up for s5
     command = ["journalctl", "-b", "0", "--output=short-unix"]
-    result = subprocess.check_output(command, shell=False,
-                                     universal_newlines=True)
+    result = subprocess.check_output(
+        command, shell=False, universal_newlines=True
+    )
     logs = result.splitlines()
 
     latest_system_back_time = None
@@ -35,8 +36,9 @@ def get_suspend_boot_time(type):
             if r"suspend exit" in log:
                 logging.debug(log)
                 latest_system_back_time = extract_timestamp(log)
-                logging.info("suspend time: {}".
-                             format(latest_system_back_time))
+                logging.info(
+                    "suspend time: {}".format(latest_system_back_time)
+                )
                 return latest_system_back_time
     elif type == "s5":
         # the first line of system boot up
@@ -59,17 +61,27 @@ def parse_args(args=sys.argv[1:]):
     :type args: sys.argv
     """
     parser = argparse.ArgumentParser(
-        description="Parse command line arguments.")
+        description="Parse command line arguments."
+    )
 
-    parser.add_argument("--interface", required=True,
-                        help="The network interface to use.")
+    parser.add_argument(
+        "--interface", required=True, help="The network interface to use."
+    )
     parser.add_argument("--powertype", type=str, help="Waked from s3 or s5.")
-    parser.add_argument("--timestamp_file", type=str,
-                        help="The file to store the timestamp of test start.")
-    parser.add_argument("--delay", type=int, default=60,
-                        help="Delay between attempts (in seconds).")
-    parser.add_argument("--retry", type=int, default=3,
-                        help="Number of retry attempts.")
+    parser.add_argument(
+        "--timestamp_file",
+        type=str,
+        help="The file to store the timestamp of test start.",
+    )
+    parser.add_argument(
+        "--delay",
+        type=int,
+        default=60,
+        help="Delay between attempts (in seconds).",
+    )
+    parser.add_argument(
+        "--retry", type=int, default=3, help="Number of retry attempts."
+    )
 
     return parser.parse_args(args)
 
