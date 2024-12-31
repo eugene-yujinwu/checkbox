@@ -37,6 +37,15 @@ include:
 bootstrap_include:
     device
 
+id: ethernet-wake-on-lan-s3-automated_2in1
+unit: test plan
+_name: Ethernet wake-on-LAN tests for s3 (automated) 2 in 1
+_description: Ethernet wake-on-LAN tests for s3(automated)
+include:
+    ethernet/wol_S3_auto_interface_2in1
+bootstrap_include:
+    device
+
 id: ethernet-wake-on-lan-s5-automated
 unit: test plan
 _name: Ethernet wake-on-LAN tests for s5 (automated)
