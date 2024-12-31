@@ -1,10 +1,11 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 import subprocess
 import netifaces
 from wol_client import (
     request,
     post,
+    check_wakeup,
     get_ip_mac,
     set_rtc_wake,
     s3_or_s5_system,
@@ -20,7 +21,6 @@ class TestRequestFunction(unittest.TestCase):
     @patch("wol_client.Session")
     @patch("wol_client.Retry")
     def test_request(self, mock_retry, mock_session):
-        # 模拟Retry和Session
         mock_retry.return_value = MagicMock()
         mock_session_instance = MagicMock()
         mock_session.return_value.__enter__.return_value = (
@@ -33,10 +33,8 @@ class TestRequestFunction(unittest.TestCase):
         url = "https://example.com/api"
         method = "POST"
 
-        # 调用被测试的函数
         response = request(method, url, retry=2, json={"key": "value"})
 
-        # 检查Session和Retry是否被正确调用
         mock_retry.assert_called_once_with(total=2)
         mock_session.assert_called_once()
         mock_session_instance.mount.assert_any_call(
@@ -64,11 +62,50 @@ class TestPostFunction(unittest.TestCase):
 
         response = post(url, data=data)
 
-        # 检查 request 函数是否被正确调用
         mock_request.assert_called_once_with(
             "post", url, data=data, json=None, retry=3
         )
         self.assertEqual(response.status_code, 200)
+
+
+class TestCheckWakeup(unittest.TestCase):
+
+    @patch("builtins.open", new_callable=mock_open, read_data="enabled\n")
+    def test_wakeup_enabled(self, mock_file):
+        self.assertTrue(check_wakeup("eth0"))
+        mock_file.assert_called_with(
+            "/sys/class/net/eth0/device/power/wakeup", "r"
+        )
+
+    @patch("builtins.open", new_callable=mock_open, read_data="disabled\n")
+    def test_wakeup_disabled(self, mock_file):
+        self.assertFalse(check_wakeup("eth0"))
+        mock_file.assert_called_with(
+            "/sys/class/net/eth0/device/power/wakeup", "r"
+        )
+
+    @patch("builtins.open", new_callable=mock_open, read_data="unknown\n")
+    def test_wakeup_unexpected_status(self, mock_file):
+        with self.assertRaises(ValueError) as context:
+            check_wakeup("eth0")
+        self.assertEqual(
+            str(context.exception), "Unexpected wakeup status: unknown"
+        )
+
+    @patch("builtins.open", side_effect=FileNotFoundError)
+    def test_interface_not_found(self, mock_file):
+        with self.assertRaises(FileNotFoundError) as context:
+            check_wakeup("nonexistent")
+        self.assertEqual(
+            str(context.exception),
+            "The network interface nonexistent does not exist.",
+        )
+
+    @patch("builtins.open", side_effect=Exception("Unexpected error"))
+    def test_unexpected_error(self, mock_file):
+        with self.assertRaises(Exception) as context:
+            check_wakeup("eth0")
+        self.assertEqual(str(context.exception), "Unexpected error")
 
 
 class TestGetIpMacFunction(unittest.TestCase):
