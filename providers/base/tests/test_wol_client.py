@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import subprocess
 import netifaces
+import requests
 from wol_client import (
     request,
     post,
@@ -317,12 +318,14 @@ class TestMainFunction(unittest.TestCase):
     @patch("wol_client.write_timestamp")
     @patch("wol_client.bring_up_system")
     @patch("wol_client.post")
+    @patch("wol_client.check_wakeup")
     @patch("wol_client.get_ip_mac")
     @patch("wol_client.parse_args")
     def test_main_success(
         self,
         mock_parse_args,
         mock_get_ip_mac,
+        mock_check_wakeup,
         mock_post,
         mock_bring_up_system,
         mock_write_timestamp,
@@ -338,6 +341,7 @@ class TestMainFunction(unittest.TestCase):
             powertype="s3",
         )
         mock_get_ip_mac.return_value = ("192.168.1.100", "00:11:22:33:44:55")
+        mock_check_wakeup.return_value = True
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"result": "success"}
@@ -363,8 +367,11 @@ class TestMainFunction(unittest.TestCase):
 
     @patch("wol_client.post")
     @patch("wol_client.get_ip_mac")
+    @patch("wol_client.check_wakeup")
     @patch("wol_client.parse_args")
-    def test_main_ip_none(self, mock_parse_args, mock_get_ip_mac, mock_post):
+    def test_main_ip_none(
+        self, mock_parse_args, mock_check_wakeup, mock_get_ip_mac, mock_post
+    ):
         mock_parse_args.return_value = MagicMock(
             delay=10,
             retry=3,
@@ -375,6 +382,7 @@ class TestMainFunction(unittest.TestCase):
             powertype="s3",
         )
         mock_get_ip_mac.return_value = (None, "00:11:22:33:44:55")
+        mock_check_wakeup.return_value = True
 
         with self.assertRaises(SystemExit) as cm:
             main()
@@ -384,9 +392,10 @@ class TestMainFunction(unittest.TestCase):
 
     @patch("wol_client.post")
     @patch("wol_client.get_ip_mac")
+    @patch("wol_client.check_wakeup")
     @patch("wol_client.parse_args")
     def test_main_post_failure(
-        self, mock_parse_args, mock_get_ip_mac, mock_post
+        self, mock_parse_args, mock_check_wakeup, mock_get_ip_mac, mock_post
     ):
 
         mock_parse_args.return_value = MagicMock(
@@ -403,10 +412,65 @@ class TestMainFunction(unittest.TestCase):
         mock_response.status_code = 400
         mock_response.json.return_value = {"result": "failure"}
         mock_post.return_value = mock_response
+        mock_check_wakeup.return_value = True
 
         with self.assertRaises(SystemExit) as cm:
             main()
         self.assertIn("get the wrong response: failure", str(cm.exception))
+
+    @patch("wol_client.post")
+    @patch("wol_client.get_ip_mac")
+    @patch("wol_client.check_wakeup")
+    @patch("wol_client.parse_args")
+    def test_main_request_exception(
+        self, mock_parse_args, mock_check_wakeup, mock_get_ip_mac, mock_post
+    ):
+        mock_parse_args.return_value = MagicMock(
+            delay=10,
+            retry=3,
+            interface="eth0",
+            target="192.168.1.1",
+            waketype="magic_packet",
+            timestamp_file="/tmp/timestamp",
+            powertype="s3",
+        )
+        mock_check_wakeup.return_value = True
+        mock_get_ip_mac.return_value = ("192.168.1.100", "00:11:22:33:44:55")
+        mock_post.side_effect = requests.exceptions.RequestException(
+            "Simulated error"
+        )
+        with self.assertRaises(SystemExit) as cm:
+            main()
+        self.assertEqual(str(cm.exception), "Request error: Simulated error")
+
+    @patch("wol_client.post")
+    @patch("wol_client.get_ip_mac")
+    @patch("wol_client.check_wakeup")
+    @patch("wol_client.parse_args")
+    def test_main_checkwakeup_disable(
+        self, mock_parse_args, mock_check_wakeup, mock_get_ip_mac, mock_post
+    ):
+        mock_parse_args.return_value = MagicMock(
+            delay=10,
+            retry=3,
+            interface="eth0",
+            target="192.168.1.1",
+            waketype="magic_packet",
+            timestamp_file="/tmp/timestamp",
+            powertype="s3",
+        )
+        mock_check_wakeup.return_value = False
+        mock_get_ip_mac.return_value = ("192.168.1.100", "00:11:22:33:44:55")
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"result": "success"}
+        mock_post.return_value = mock_response
+
+        with self.assertRaises(SystemExit) as cm:
+            main()
+        self.assertIn(
+            "The wake on lan of eth0 is disabled!", str(cm.exception)
+        )
 
 
 if __name__ == "__main__":

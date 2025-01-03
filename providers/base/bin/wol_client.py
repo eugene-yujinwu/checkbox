@@ -209,8 +209,9 @@ def main():
     logging.info("Wake on LAN test started.")
     logging.info("Test network interface: {}".format(args.interface))
 
-    result_enabled = check_wakeup(args.interface)
-    if result_enabled is False:
+    wakeup_enabled = check_wakeup(args.interface)
+    # wakeup_enabled = False
+    if not wakeup_enabled:
         raise SystemExit(
             "The wake on lan of {} is disabled!".format(args.interface)
         )
@@ -238,13 +239,15 @@ def main():
         # send the request to wol server
         resp = post(url, json=req, retry=3)
         result_dict = resp.json()
-
-    except requests.exceptions.ConnectionError as e:
-        raise SystemExit("Connection error: {}".format(e))
-    except requests.exceptions.HTTPError as e:
-        raise SystemExit("HTTP error: {}".format(e))
     except requests.exceptions.RequestException as e:
         raise SystemExit("Request error: {}".format(e))
+
+    # except requests.exceptions.ConnectionError as e:
+    #     raise SystemExit("Connection error: {}".format(e))
+    # except requests.exceptions.HTTPError as e:
+    #     raise SystemExit("HTTP error: {}".format(e))
+    # except requests.exceptions.RequestException as e:
+    #     raise SystemExit("Request error: {}".format(e))
 
     if resp.status_code != 200 or result_dict["result"] != "success":
         raise SystemExit(

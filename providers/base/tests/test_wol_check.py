@@ -63,6 +63,15 @@ class TestGetSuspendBootTime(unittest.TestCase):
         time = get_suspend_boot_time("s5")
         self.assertEqual(time, 1734512121.128220)
 
+    @patch("subprocess.check_output")
+    def test_get_suspend_boot_time_wrong_power_type(self, mock_check_output):
+        mock_check_output.return_value = r"1734512121.128220 M70s-Gen6-1 kernel: Linux version 6.11.0-1009-oem"
+        with self.assertRaises(SystemExit) as cm:
+            get_suspend_boot_time("wrong_power_type")
+        self.assertEqual(
+            str(cm.exception), "Invalid power type. Please use s3 or s5."
+        )
+
 
 class ParseArgsTests(unittest.TestCase):
     def test_parse_args_with_interface(self):
@@ -162,14 +171,15 @@ class TestMain(unittest.TestCase):
         mock_parse_args.return_value = args_mock
 
         mock_get_timestamp.return_value = 100.0
-        mock_get_suspend_boot_time.return_value = 300.0
+        mock_get_suspend_boot_time.return_value = 400.0
 
         # Expect SystemExit exception with specific message
         with self.assertRaises(SystemExit) as cm:
             main()
         self.assertEqual(
             str(cm.exception),
-            "Time difference is 200.0 greater than 1.5*delay*retry 180.0",
+            "The system took much longer than expected to wake up,"
+            "and it wasn't awakened by wake-on-LAN.",
         )
 
     @patch("wol_check.parse_args")

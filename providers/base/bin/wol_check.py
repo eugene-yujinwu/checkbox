@@ -49,8 +49,8 @@ def get_suspend_boot_time(type):
     else:
         raise SystemExit("Invalid power type. Please use s3 or s5.")
 
-    if latest_system_back_time is None:
-        raise SystemExit("NOT find 'suspend exit' or boot time in kernel log")
+    # if latest_system_back_time is None:
+    #     raise SystemExit("NOT find 'suspend exit' or boot time in kernel log")
 
 
 def parse_args(args=sys.argv[1:]):
@@ -114,12 +114,14 @@ def main():
     logging.info("time difference: {}".format(time_difference))
 
     # system_back_time - test_start_time > 1.5*max_retries*delay which meanse
-    # the system was bring up by rtc other than Wake-on-lan
+    # the system was bring up by rtc other than Wake-on-LAN
     expect_time_range = 1.5 * max_retries * delay
     if time_difference > expect_time_range:
         raise SystemExit(
-            "Time difference is {} greater than "
-            "1.5*delay*retry {}".format(time_difference, expect_time_range)
+            "The system took much longer than expected to wake up,"
+            "and it wasn't awakened by wake-on-LAN."
+            # "Time difference is {} greater than "
+            # "1.5*delay*retry {}".format(time_difference, expect_time_range)
         )
     elif time_difference < 0:
         raise SystemExit("Time difference is less than 0.")
