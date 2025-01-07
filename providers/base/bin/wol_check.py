@@ -1,6 +1,24 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+
+# Copyright 2025 Canonical Ltd.
+# Written by:
+#   Eugene Wu <eugene.wu@canonical.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 import subprocess
+import datetime
 import re
 import argparse
 import logging
@@ -10,7 +28,7 @@ import sys
 def get_timestamp(file):
     with open(file, "r") as f:
         saved_timestamp = float(f.read())
-        logging.info("saved_timestamp: {}".format(saved_timestamp))
+        # logging.info("saved_timestamp: {}".format(saved_timestamp))
     return saved_timestamp
 
 
@@ -36,21 +54,18 @@ def get_suspend_boot_time(type):
             if r"suspend exit" in log:
                 logging.debug(log)
                 latest_system_back_time = extract_timestamp(log)
-                logging.info(
-                    "suspend time: {}".format(latest_system_back_time)
-                )
+                # logging.info(
+                #     "suspend time: {}".format(latest_system_back_time)
+                # )
                 return latest_system_back_time
     elif type == "s5":
         # the first line of system boot up
         log = logs[0]
         latest_system_back_time = extract_timestamp(log)
-        logging.info("boot_time: {}".format(latest_system_back_time))
+        # logging.info("boot_time: {}".format(latest_system_back_time))
         return latest_system_back_time
     else:
         raise SystemExit("Invalid power type. Please use s3 or s5.")
-
-    # if latest_system_back_time is None:
-    #     raise SystemExit("NOT find 'suspend exit' or boot time in kernel log")
 
 
 def parse_args(args=sys.argv[1:]):
@@ -95,7 +110,7 @@ def main():
         format="%(levelname)s: %(message)s",
     )
 
-    logging.info("Wake on LAN log check test started.")
+    logging.info("wake-on-LAN check test started.")
 
     interface = args.interface
     powertype = args.powertype
@@ -107,11 +122,15 @@ def main():
     logging.info("PowerType: {}".format(powertype))
 
     test_start_time = float(get_timestamp(timestamp_file))
+    actual_start_time = datetime.datetime.fromtimestamp(test_start_time)
+    logging.debug("Test started at: {}".format(actual_start_time))
+
     system_back_time = float(get_suspend_boot_time(powertype))
+    actual_back_time = datetime.datetime.fromtimestamp(system_back_time)
+    logging.debug("System back time: {}".format(actual_back_time))
 
     time_difference = system_back_time - test_start_time
-
-    logging.info("time difference: {}".format(time_difference))
+    logging.debug("time difference: {}".format(int(time_difference)))
 
     # system_back_time - test_start_time > 1.5*max_retries*delay which meanse
     # the system was bring up by rtc other than Wake-on-LAN
@@ -120,13 +139,11 @@ def main():
         raise SystemExit(
             "The system took much longer than expected to wake up,"
             "and it wasn't awakened by wake-on-LAN."
-            # "Time difference is {} greater than "
-            # "1.5*delay*retry {}".format(time_difference, expect_time_range)
         )
-    elif time_difference < 0:
-        raise SystemExit("Time difference is less than 0.")
+    elif time_difference < delay:
+        raise SystemExit("System resume up earlier than expected.")
     else:
-        logging.info("Wake-on-lan workes well.")
+        logging.info("wake-on-LAN workes well.")
         return True
 
 

@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
 
+# Copyright 2025 Canonical Ltd.
+# Written by:
+#   Eugene Wu <eugene.wu@canonical.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import logging
 from urllib3.util import Retry
 from requests import Session
@@ -206,14 +222,14 @@ def main():
         format="%(levelname)s: %(message)s",
     )
 
-    logging.info("Wake on LAN test started.")
+    logging.info("wake-on-LAN test started.")
     logging.info("Test network interface: {}".format(args.interface))
 
     wakeup_enabled = check_wakeup(args.interface)
     # wakeup_enabled = False
     if not wakeup_enabled:
         raise SystemExit(
-            "The wake on lan of {} is disabled!".format(args.interface)
+            "wake-on-LAN of {} is disabled!".format(args.interface)
         )
 
     delay = args.delay
@@ -242,13 +258,6 @@ def main():
     except requests.exceptions.RequestException as e:
         raise SystemExit("Request error: {}".format(e))
 
-    # except requests.exceptions.ConnectionError as e:
-    #     raise SystemExit("Connection error: {}".format(e))
-    # except requests.exceptions.HTTPError as e:
-    #     raise SystemExit("HTTP error: {}".format(e))
-    # except requests.exceptions.RequestException as e:
-    #     raise SystemExit("Request error: {}".format(e))
-
     if resp.status_code != 200 or result_dict["result"] != "success":
         raise SystemExit(
             "get the wrong response: {}".format(result_dict["result"])
@@ -256,6 +265,7 @@ def main():
 
     # bring up the system. The time should be delay*retry*2
     bring_up_system("rtc", delay * retry * 2)
+    logging.debug("set the rtcwake time: {} ".format(delay*retry*2))
 
     # write the time stamp
     write_timestamp(args.timestamp_file)

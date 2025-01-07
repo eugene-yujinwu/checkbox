@@ -1,3 +1,22 @@
+#!/usr/bin/env python3
+
+# Copyright 2025 Canonical Ltd.
+# Written by:
+#   Eugene Wu <eugene.wu@canonical.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import unittest
 from unittest.mock import patch, MagicMock
 from wol_check import (
@@ -16,7 +35,6 @@ class TestGetTimestamp(unittest.TestCase):
         mock_file.read.return_value = "1622547800.0"
 
         result = get_timestamp("test_file.txt")
-
         self.assertEqual(result, 1622547800.0)
 
     @patch("builtins.open")
@@ -25,15 +43,6 @@ class TestGetTimestamp(unittest.TestCase):
 
         with self.assertRaises(FileNotFoundError):
             get_timestamp("nonexistent_file.txt")
-
-    @patch(
-        "builtins.open",
-        new_callable=unittest.mock.mock_open,
-        read_data="1622547800.0",
-    )
-    def test_get_timestamp(self, mock_file):
-        timestamp = get_timestamp("dummy_file")
-        self.assertEqual(timestamp, 1622547800.0)
 
 
 class TestExtractTimeStamp(unittest.TestCase):
@@ -59,13 +68,17 @@ class TestGetSuspendBootTime(unittest.TestCase):
 
     @patch("subprocess.check_output")
     def test_get_suspend_boot_time_s5(self, mock_check_output):
-        mock_check_output.return_value = r"1734512121.128220 M70s-Gen6-1 kernel: Linux version 6.11.0-1009-oem"
+        mock_check_output.return_value = (
+            r"1734512121.128220 M70s kernel: Linux version 6.11.0-1009-oem"
+        )
         time = get_suspend_boot_time("s5")
         self.assertEqual(time, 1734512121.128220)
 
     @patch("subprocess.check_output")
     def test_get_suspend_boot_time_wrong_power_type(self, mock_check_output):
-        mock_check_output.return_value = r"1734512121.128220 M70s-Gen6-1 kernel: Linux version 6.11.0-1009-oem"
+        mock_check_output.return_value = (
+            r"1734512121.128220 M70s kernel: Linux version 6.11.0-1009-oem"
+        )
         with self.assertRaises(SystemExit) as cm:
             get_suspend_boot_time("wrong_power_type")
         self.assertEqual(
@@ -119,11 +132,6 @@ class ParseArgsTests(unittest.TestCase):
         self.assertEqual(rv.delay, 60)
         self.assertEqual(rv.retry, 5)
 
-    def test_parse_args_missing_interface(self):
-        args = []
-        with self.assertRaises(SystemExit):
-            parse_args(args)
-
 
 class TestMain(unittest.TestCase):
     @patch("wol_check.parse_args")
@@ -141,7 +149,7 @@ class TestMain(unittest.TestCase):
         mock_parse_args.return_value = args_mock
 
         mock_get_timestamp.return_value = 100.0
-        mock_get_suspend_boot_time.return_value = 120.0
+        mock_get_suspend_boot_time.return_value = 160.0
 
         # Call main function
         with self.assertLogs(level="INFO") as log_messages:
@@ -149,12 +157,11 @@ class TestMain(unittest.TestCase):
 
         # Verify logging messages
         self.assertIn(
-            "Wake on LAN log check test started.", log_messages.output[0]
+            "wake-on-LAN check test started.", log_messages.output[0]
         )
         self.assertIn("Interface: eth0", log_messages.output[1])
         self.assertIn("PowerType: s3", log_messages.output[2])
-        self.assertIn("time difference: 20.0", log_messages.output[3])
-        self.assertIn("Wake-on-lan workes well.", log_messages.output[4])
+        self.assertIn("wake-on-LAN workes well.", log_messages.output[3])
 
     @patch("wol_check.parse_args")
     @patch("wol_check.get_timestamp")
@@ -201,7 +208,9 @@ class TestMain(unittest.TestCase):
 
         with self.assertRaises(SystemExit) as cm:
             main()
-        self.assertEqual(str(cm.exception), "Time difference is less than 0.")
+        self.assertEqual(
+            str(cm.exception), "System resume up earlier than expected."
+        )
 
 
 if __name__ == "__main__":

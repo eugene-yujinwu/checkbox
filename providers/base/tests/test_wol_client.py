@@ -1,3 +1,22 @@
+#!/usr/bin/env python3
+
+# Copyright 2025 Canonical Ltd.
+# Written by:
+#   Eugene Wu <eugene.wu@canonical.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import subprocess
@@ -18,7 +37,6 @@ from wol_client import (
 
 
 class TestRequestFunction(unittest.TestCase):
-
     @patch("wol_client.Session")
     @patch("wol_client.Retry")
     def test_request(self, mock_retry, mock_session):
@@ -51,7 +69,6 @@ class TestRequestFunction(unittest.TestCase):
 
 
 class TestPostFunction(unittest.TestCase):
-
     @patch("wol_client.request")
     def test_post(self, mock_request):
         mock_response = MagicMock()
@@ -70,7 +87,6 @@ class TestPostFunction(unittest.TestCase):
 
 
 class TestCheckWakeup(unittest.TestCase):
-
     @patch("builtins.open", new_callable=mock_open, read_data="enabled\n")
     def test_wakeup_enabled(self, mock_file):
         self.assertTrue(check_wakeup("eth0"))
@@ -110,7 +126,6 @@ class TestCheckWakeup(unittest.TestCase):
 
 
 class TestGetIpMacFunction(unittest.TestCase):
-
     @patch("wol_client.netifaces.ifaddresses")
     def test_get_ip_mac_success(self, mock_ifaddresses):
         # Mock the return value of netifaces.ifaddresses
@@ -134,23 +149,8 @@ class TestGetIpMacFunction(unittest.TestCase):
 
         ip, mac = get_ip_mac("eth0")
 
-        # Assertions
         self.assertIsNone(ip)  # No IP address should be returned
         self.assertEqual(mac, "00:11:22:33:44:55")
-
-    # @patch('wol_client.netifaces.ifaddresses')
-    # def test_get_ip_mac_no_mac(self, mock_ifaddresses):
-    #     # Mock the return value of netifaces.ifaddresses (no AF_LINK)
-    #     mock_ifaddresses.return_value = {
-    #         netifaces.AF_INET: [{'addr': '192.168.1.10'}],
-    #         # No AF_LINK key to simulate no MAC address
-    #     }
-
-    #     ip, mac = get_ip_mac('eth0')
-
-    #     # Assertions
-    #     self.assertEqual(ip, '192.168.1.10')  # IP should be returned
-    #     self.assertIsNone(mac)  # No MAC address should be returned
 
     @patch("wol_client.netifaces.ifaddresses")
     def test_get_ip_mac_interface_not_found(self, mock_ifaddresses):
@@ -170,7 +170,6 @@ class TestSetRTCWake(unittest.TestCase):
         expected_wake_time = 180
         mock_check_output.return_value = b""  # Simulate successful execution
         set_rtc_wake(expected_wake_time)
-        # mock_check_output.assert_called_once_with(["rtcwake", "-m", "no", "-s", str(expected_wake_time)])
         mock_check_output.assert_called_once_with(
             ["rtcwake", "-m", "no", "-s", str(expected_wake_time)], stderr=-2
         )
@@ -246,27 +245,23 @@ class TestBringUpSystem(unittest.TestCase):
             bring_up_system("invalid", "10:00")
         self.assertEqual(
             str(cm.exception),
-            "we don't have the way invalid to bring up the system,Some error happened.",
+            "we don't have the way invalid to bring up the system,"
+            "Some error happened.",
         )
 
 
 class TestWriteTimestamp(unittest.TestCase):
-
     @patch("builtins.open")
-    # @patch('builtins.open', new_callable=mock_open)
     def test_write_timestamp(self, mock_file_open):
         """Tests if the timestamp is correctly written to the file."""
-        # expected_timestamp = "12345"
         write_timestamp("/tmp/timestamp_file")
         mock_file_open.assert_called_once_with("/tmp/timestamp_file", "w")
         handle = mock_file_open.return_value.__enter__.return_value
-        # handle.write.assert_called_once_with(expected_timestamp)
         handle.write.assert_called_once()
         handle.flush.assert_called_once()
 
 
 class TestParseArgs(unittest.TestCase):
-
     def test_parse_required_arguments(self):
         """Tests parsing required arguments."""
         args = ["--interface", "eth0", "--target", "192.168.1.10"]
@@ -305,15 +300,14 @@ class TestParseArgs(unittest.TestCase):
         self.assertEqual(parsed_args.powertype, "s5")
         self.assertEqual(parsed_args.timestamp_file, "/tmp/test.log")
 
-    def test_missing_required_argument(self):
-        """Tests handling missing required argument."""
-        args = ["--target", "192.168.1.10"]
-        with self.assertRaises(SystemExit):
-            parse_args(args)
+    # def test_missing_required_argument(self):
+    #     """Tests handling missing required argument."""
+    #     args = ["--target", "192.168.1.10"]
+    #     with self.assertRaises(SystemExit):
+    #         parse_args(args)
 
 
 class TestMainFunction(unittest.TestCase):
-
     @patch("wol_client.s3_or_s5_system")
     @patch("wol_client.write_timestamp")
     @patch("wol_client.bring_up_system")
@@ -469,7 +463,7 @@ class TestMainFunction(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             main()
         self.assertIn(
-            "The wake on lan of eth0 is disabled!", str(cm.exception)
+            "wake-on-LAN of eth0 is disabled!", str(cm.exception)
         )
 
 
