@@ -13,7 +13,9 @@
 ## Test Case enviroment
     WOL server:
       1. apt install wakeonlan
-      2. running the python script wol_server.py
+      2. pip install fastapi
+      3. pip install uvicorn
+      4. running the python script wol_server.py
 
     DUT:
       manifest:
@@ -24,10 +26,44 @@
         - WAKE_ON_LAN_DELAY
         - WAKE_ON_LAN_RETRY
 
+## Test scripts
+    1. wol_client.py
+      usage: wol_client.py [-h] --interface INTERFACE --target TARGET [--delay DELAY] [--retry RETRY] [--waketype WAKETYPE]
+                          [--powertype POWERTYPE] [--timestamp_file TIMESTAMP_FILE]
+      options:
+        -h, --help            show this help message and exit
+        --interface INTERFACE
+                              The network interface to use.
+        --target TARGET       The target IP address or hostname.
+        --delay DELAY         Delay between attempts (in seconds).
+        --retry RETRY         Number of retry attempts.
+        --waketype WAKETYPE   Type of wake operation.eg 'g' for magic packet
+        --powertype POWERTYPE
+                              Type of s3 or s5.
+        --timestamp_file TIMESTAMP_FILE
+                              The file to store the timestamp of test start.
+    2. wol_check.py
+      usage: wol_check.py [-h] --interface INTERFACE [--powertype POWERTYPE] [--timestamp_file TIMESTAMP_FILE] [--delay DELAY] [--retry RETRY]
+      options:
+        -h, --help            show this help message and exit
+        --interface INTERFACE
+                              The network interface to use.
+        --powertype POWERTYPE
+                              Waked from s3 or s5.
+        --timestamp_file TIMESTAMP_FILE
+                              The file to store the timestamp of test start.
+        --delay DELAY         Delay between attempts (in seconds).
+        --retry RETRY         Number of retry attempts.
+
+    3. wol_server.py
+      Listen on the specified port to receive and handle the DUT's requests.
+
 ## Work process of the wake-on-LAN automatic test
-  1. The DUT gets its own NIC's MAC and IP, fetches WOL server info from environment variables, sends data to the server, receives a success response, records timestamp, sets rtcwake, and suspends.
-  2. The WOL server receives DUT requests, extracts MAC, IP, delay, and retry count. After sending a success response, it waits, sends a WOL command, waits, and pings. If the ping fails, it retries up to the specified retry times.
-  3. After system resume up, the DUT compares the resume time to the stored timestamp. If the elapsed time is between delay and 1.5(delay*retry), WOL is assumed; otherwise, an RTC wake-up is inferred.
+    1. The DUT gets its own NIC's MAC and IP, fetches WOL server info from environment variables, sends data to the server, receives a success response, records timestamp, sets rtcwake, and suspends.
+
+    2. The WOL server receives DUT requests, extracts MAC, IP, delay, and retry count. After sending a success response, it waits, sends a WOL command, waits, and pings. If the ping fails, it retries up to the specified retry times.
+
+    3. After system resume up, the DUT compares the resume time to the stored timestamp. If the elapsed time is between delay and 1.5(delay*retry), WOL is assumed; otherwise, an RTC wake-up is inferred.
 
 
 

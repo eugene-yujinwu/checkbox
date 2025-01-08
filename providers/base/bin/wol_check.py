@@ -123,11 +123,15 @@ def main():
 
     test_start_time = float(get_timestamp(timestamp_file))
     actual_start_time = datetime.datetime.fromtimestamp(test_start_time)
-    logging.debug("Test started at: {}".format(actual_start_time))
+    logging.debug(
+        "Test started at: {}({})".format(test_start_time, actual_start_time)
+    )
 
     system_back_time = float(get_suspend_boot_time(powertype))
     actual_back_time = datetime.datetime.fromtimestamp(system_back_time)
-    logging.debug("System back time: {}".format(actual_back_time))
+    logging.debug(
+        "System back time: {}({})".format(system_back_time, actual_back_time)
+    )
 
     time_difference = system_back_time - test_start_time
     logging.debug("time difference: {}".format(int(time_difference)))
@@ -140,7 +144,7 @@ def main():
             "The system took much longer than expected to wake up,"
             "and it wasn't awakened by wake-on-LAN."
         )
-    elif time_difference < delay:
+    elif time_difference < 0:
         raise SystemExit("System resume up earlier than expected.")
     else:
         logging.info("wake-on-LAN workes well.")

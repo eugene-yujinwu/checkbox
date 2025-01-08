@@ -201,7 +201,9 @@ def parse_args(args=sys.argv[1:]):
         "--retry", type=int, default=5, help="Number of retry attempts."
     )
     parser.add_argument(
-        "--waketype", default="g", help="Type of wake operation.eg 'g' for "
+        "--waketype",
+        default="g",
+        help="Type of wake operation.eg 'g' for magic packet",
     )
     parser.add_argument("--powertype", type=str, help="Type of s3 or s5.")
     parser.add_argument(
@@ -237,7 +239,7 @@ def main():
 
     ip, mac = get_ip_mac(args.interface)
 
-    logging.info("ip: {}, mac: {}".format(ip, mac))
+    logging.info("IP: {}, MAC: {}".format(ip, mac))
 
     if ip is None:
         raise SystemExit("Error: failed to get the ip address.")
@@ -265,7 +267,9 @@ def main():
 
     # bring up the system. The time should be delay*retry*2
     bring_up_system("rtc", delay * retry * 2)
-    logging.debug("set the rtcwake time: {} ".format(delay*retry*2))
+    logging.debug(
+        "set the rtcwake time: {} seconds ".format(delay * retry * 2)
+    )
 
     # write the time stamp
     write_timestamp(args.timestamp_file)
