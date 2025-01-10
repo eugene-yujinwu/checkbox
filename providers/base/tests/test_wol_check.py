@@ -88,15 +88,26 @@ class TestGetSuspendBootTime(unittest.TestCase):
 
 class ParseArgsTests(unittest.TestCase):
     def test_parse_args_with_interface(self):
-        args = ["--interface", "eth0"]
+        args = [
+            "--interface",
+            "enp0s31f6",
+            "--delay",
+            "10",
+            "--retry",
+            "5",
+            "--powertype",
+            "s5",
+            "--timestamp_file",
+            "/tmp/time_file",
+        ]
         rv = parse_args(args)
-        self.assertEqual(rv.interface, "eth0")
-        self.assertIsNone(rv.powertype)
-        self.assertIsNone(rv.timestamp_file)
-        self.assertEqual(rv.delay, 60)
-        self.assertEqual(rv.retry, 3)
+        self.assertEqual(rv.interface, "enp0s31f6")
+        self.assertEqual(rv.powertype, "s5")
+        self.assertEqual(rv.timestamp_file, "/tmp/time_file")
+        self.assertEqual(rv.delay, 10)
+        self.assertEqual(rv.retry, 5)
 
-    def test_parse_args_with_powertype(self):
+    def test_parse_args_with_default_value(self):
         args = ["--interface", "eth0", "--powertype", "s3"]
         rv = parse_args(args)
         self.assertEqual(rv.interface, "eth0")
@@ -104,33 +115,6 @@ class ParseArgsTests(unittest.TestCase):
         self.assertIsNone(rv.timestamp_file)
         self.assertEqual(rv.delay, 60)
         self.assertEqual(rv.retry, 3)
-
-    def test_parse_args_with_timestamp_file(self):
-        args = ["--interface", "eth0", "--timestamp_file", "/tmp/test.txt"]
-        rv = parse_args(args)
-        self.assertEqual(rv.interface, "eth0")
-        self.assertIsNone(rv.powertype)
-        self.assertEqual(rv.timestamp_file, "/tmp/test.txt")
-        self.assertEqual(rv.delay, 60)
-        self.assertEqual(rv.retry, 3)
-
-    def test_parse_args_with_delay(self):
-        args = ["--interface", "eth0", "--delay", "10"]
-        rv = parse_args(args)
-        self.assertEqual(rv.interface, "eth0")
-        self.assertIsNone(rv.powertype)
-        self.assertIsNone(rv.timestamp_file)
-        self.assertEqual(rv.delay, 10)
-        self.assertEqual(rv.retry, 3)
-
-    def test_parse_args_with_retry(self):
-        args = ["--interface", "eth0", "--retry", "5"]
-        rv = parse_args(args)
-        self.assertEqual(rv.interface, "eth0")
-        self.assertIsNone(rv.powertype)
-        self.assertIsNone(rv.timestamp_file)
-        self.assertEqual(rv.delay, 60)
-        self.assertEqual(rv.retry, 5)
 
 
 class TestMain(unittest.TestCase):

@@ -262,22 +262,11 @@ class TestWriteTimestamp(unittest.TestCase):
 
 
 class TestParseArgs(unittest.TestCase):
-    def test_parse_required_arguments(self):
-        """Tests parsing required arguments."""
-        args = ["--interface", "eth0", "--target", "192.168.1.10"]
-        parsed_args = parse_args(args)
-        self.assertEqual(parsed_args.interface, "eth0")
-        self.assertEqual(parsed_args.target, "192.168.1.10")
-        self.assertEqual(parsed_args.delay, 60)  # Default value
-        self.assertEqual(parsed_args.retry, 5)  # Default value
-        self.assertEqual(parsed_args.waketype, "g")  # Default value
-        self.assertIsNone(parsed_args.powertype)
-
     def test_parse_all_arguments(self):
         """Tests parsing all arguments."""
         args = [
             "--interface",
-            "eth0",
+            "enp0s31f6",
             "--target",
             "192.168.1.10",
             "--delay",
@@ -289,22 +278,27 @@ class TestParseArgs(unittest.TestCase):
             "--powertype",
             "s5",
             "--timestamp_file",
-            "/tmp/test.log",
+            "/tmp/time_stamp",
         ]
         parsed_args = parse_args(args)
-        self.assertEqual(parsed_args.interface, "eth0")
+        self.assertEqual(parsed_args.interface, "enp0s31f6")
         self.assertEqual(parsed_args.target, "192.168.1.10")
         self.assertEqual(parsed_args.delay, 120)
         self.assertEqual(parsed_args.retry, 3)
         self.assertEqual(parsed_args.waketype, "m")
         self.assertEqual(parsed_args.powertype, "s5")
-        self.assertEqual(parsed_args.timestamp_file, "/tmp/test.log")
+        self.assertEqual(parsed_args.timestamp_file, "/tmp/time_stamp")
 
-    # def test_missing_required_argument(self):
-    #     """Tests handling missing required argument."""
-    #     args = ["--target", "192.168.1.10"]
-    #     with self.assertRaises(SystemExit):
-    #         parse_args(args)
+    def test_parse_required_arguments(self):
+        """Tests parsing required arguments."""
+        args = ["--interface", "eth0", "--target", "192.168.1.10"]
+        parsed_args = parse_args(args)
+        self.assertEqual(parsed_args.interface, "eth0")
+        self.assertEqual(parsed_args.target, "192.168.1.10")
+        self.assertEqual(parsed_args.delay, 60)  # Default value
+        self.assertEqual(parsed_args.retry, 3)  # Default value
+        self.assertEqual(parsed_args.waketype, "g")  # Default value
+        self.assertIsNone(parsed_args.powertype)
 
 
 class TestMainFunction(unittest.TestCase):

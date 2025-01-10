@@ -198,7 +198,7 @@ def parse_args(args=sys.argv[1:]):
         help="Delay between attempts (in seconds).",
     )
     parser.add_argument(
-        "--retry", type=int, default=5, help="Number of retry attempts."
+        "--retry", type=int, default=3, help="Number of retry attempts."
     )
     parser.add_argument(
         "--waketype",
