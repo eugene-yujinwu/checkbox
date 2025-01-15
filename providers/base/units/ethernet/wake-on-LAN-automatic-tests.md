@@ -19,7 +19,7 @@ WOL server:
 
 DUT:
   - manifest:
-    - has_ethernet_wake_on_lan_support
+    - has_ethernet_adapter
     - has_ethernet_wake_on_lan_support
 
   - enviroment variable:
