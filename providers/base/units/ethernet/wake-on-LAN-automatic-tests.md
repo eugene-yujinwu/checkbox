@@ -1,7 +1,7 @@
 # This is a file introducing Wake-on-LAN automatic test jobs
 
   To make the test of Wake-on-LAN automatic, we need:
-  
+
   The device under test (DUT) obtains its own network interface's MAC and IP address, retrieves the Wake-on-LAN server's IP and port from environment variables, sends the IP and MAC to the Wake-on-LAN server, it records the current timestamp and suspends itself after receiving a successful response from the server.
 
   A Wake-on-LAN HTTP server that receives requests from the device under test (DUT), extracts the DUT's MAC and IP addresses from the request, and then sends a Wake-on-LAN command to the DUT in an attempt to power it on.
@@ -82,6 +82,12 @@ uvicorn wol_server:app --host 0.0.0.0 --port 8090
 
 3. After system resume up, the DUT compares the resume time to the stored timestamp. If the elapsed time is between 0 and 1.5(delay*retry), WOL is assumed; otherwise, an RTC wake-up is inferred.
 
+## Limitation and Future work
+The initial plan was to automate Wake-on-LAN testing for both S3 and S5 system states. The test would be split into two sub-test jobs:
 
+1. Pre-S3/S5 Job (wol_client.py): This job would run before entering either the S3 or S5 state. Its primary function would be to gather information, send requests, and record timestamps.
+2. Post-Recovery Job (wol_check.py): This job, running on the S3 or S5 system itself after recovery, would perform log checks to determine if WoL triggered system wake-up.
 
+However, due to current limitations in Checkbox, we cannot guarantee a strict execution order for test jobs. This makes the initial approach infeasible. Consequently, with the current setup, we can only automate WoL testing for S3.
 
+We would like to keep the two scripts separately. This allows for future implementation of automated WoL testing for S5 if we can find a way to specify the strictly execution order of test jobs in the future.
