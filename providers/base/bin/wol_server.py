@@ -1,5 +1,22 @@
 #!/usr/bin/python3
 
+# Copyright 2025 Canonical Ltd.
+# Written by:
+#   Eugene Wu <eugene.wu@canonical.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import logging
 import threading
 import time
@@ -8,6 +25,7 @@ import shlex
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi import HTTPException
 
 app = FastAPI()
 
@@ -24,11 +42,11 @@ async def testing(wol_request: dict):
             content=jsonable_encoder(ret_server), status_code=200
         )
     except Exception as e:
-        logger.critical(repr(e))
+        logger.error("exception in testing: {}".format(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def send_wol_command(Wol_Info: dict):
-
     dut_mac = Wol_Info["DUT_MAC"]
     dut_ip = Wol_Info["DUT_IP"]
     wake_type = Wol_Info["wake_type"]
@@ -42,20 +60,14 @@ def send_wol_command(Wol_Info: dict):
         logger.debug("Wake on lan command: {}".format(command_dict[wake_type]))
         output = subprocess.check_output(shlex.split(command_dict[wake_type]))
         logger.debug({output})
+        return True
 
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         logger.error("Error occurred in tasker_main: {}".format(e))
         return False
-
-    except KeyError as e:
-        logger.error("Error occurred in tasker_main: {}".format(e))
-        return False
-
-    return True
 
 
 def tasker_main(request: dict) -> dict:
-
     try:
         # Extracting necessary fields from the request
         dut_ip = request.get("DUT_IP")
@@ -76,7 +88,7 @@ def tasker_main(request: dict) -> dict:
         return {"result": "success"}
 
     except Exception as e:
-        logger.exception(
+        logger.error(
             "Error occurred while processing the request: {}".format(e)
         )
         return {"result": "error", "message": str(e)}
@@ -84,7 +96,6 @@ def tasker_main(request: dict) -> dict:
 
 def is_pingable(ip_address):
     try:
-        #  use ping command to ping the host
         command = ["ping", "-c", "1", "-W", "1", ip_address]
         output = subprocess.check_output(
             command, stderr=subprocess.STDOUT, universal_newlines=True
@@ -92,21 +103,16 @@ def is_pingable(ip_address):
         logger.debug("ping: {}".format(output))
         return True
     except subprocess.CalledProcessError as e:
-        # print("ping:", output)
-        logger.debug("An error occurred while ping the DUT: str{}".format(e))
+        logger.error("An error occurred while ping the DUT: {}".format(e))
         return False
 
 
 def run_task(data, delay):
-
-    # dut_mac = data['DUT_MAC']
     dut_ip = data["DUT_IP"]
     delay = data["delay"]
     retry_times = data["retry_times"]
-    # wake_type = data['wake_type']
 
     for attempt in range(retry_times):
-        # logger.info("threading:", dut_mac)
         logger.debug("retry times: {}".format(attempt))
         time.sleep(delay)
 
@@ -119,10 +125,8 @@ def run_task(data, delay):
             # if not up, send wol command again
             logger.debug("ping DUT to see if it had been waked up")
             time.sleep(delay)
-            # ping dut
             if is_pingable(dut_ip):
                 logger.info("{} is pingable, the DUT is back".format(dut_ip))
-                # logger.info("ping DUT to see if it had been waked up")
                 return True
             else:
                 logger.info(
@@ -132,16 +136,4 @@ def run_task(data, delay):
         except Exception as e:
             logger.error("Error occurred in tasker_main: {}".format(e))
 
-        # retry finished
     return False
-
-
-if __name__ == "__main__":
-    req = {
-        "DUT_MAC": "00:00:00:00:00",
-        "DUT_IP": "127.0.0.1",
-        "delay": 60,
-        "retry_times": 5,
-        "wake_type": "g",
-    }
-    r1 = tasker_main(request=req)
