@@ -453,9 +453,91 @@ requires:
  manifest.has_ethernet_wake_on_lan_support== 'True'
 command:
  set -e
- wol_client.py --interface {{ interface }} --target "$SERVER_WAKE_ON_LAN" --delay "$WAKE_ON_LAN_DELAY" --retry "$WAKE_ON_LAN_RETRY" --waketype g --powertype s3  --timestamp_file "$PLAINBOX_SESSION_SHARE"/{{ interface }}_s3_timestamp
- sleep 30
- wol_check.py --interface {{ interface }} --delay "$WAKE_ON_LAN_DELAY" --retry "$WAKE_ON_LAN_RETRY" --powertype s3 --timestamp_file "$PLAINBOX_SESSION_SHARE"/{{ interface }}_s3_timestamp
+ wol_client.py --interface {{ interface }} --target $SERVER_WAKE_ON_LAN --delay $WAKE_ON_LAN_DELAY --retry $WAKE_ON_LAN_RETRY --waketype g --powertype s3  --timestamp_file "$PLAINBOX_SESSION_SHARE"/{{ interface }}_s3_timestamp
 user: root
 estimated_duration: 600
 flags: preserve-locale
+
+id: ethernet/wol_S3_auto_{{ interface }}_result_check
+template-id: ethernet/wol_S3_auto_interface_result_check
+category_id: com.canonical.plainbox::ethernet
+unit: template
+template-resource: device
+template-engine: jinja2
+template-filter: device.category == 'NETWORK' and device.mac != 'UNKNOWN'
+_summary: Resutl check for Wake on LAN (WOL) automatic test from S3 - {{ interface }}
+_purpose: Check the kernel log to see if system waked up by Wake on lan.
+template-unit: job
+plugin: shell
+environ: SERVER_WAKE_ON_LAN WAKE_ON_LAN_DELAY WAKE_ON_LAN_RETRY PLAINBOX_SESSION_SHARE
+command:
+  sleep 30
+  wol_check.py --interface {{ interface }} --delay $WAKE_ON_LAN_DELAY --retry $WAKE_ON_LAN_RETRY --powertype s3 --timestamp_file "$PLAINBOX_SESSION_SHARE"/{{ interface }}_s3_timestamp
+user: root
+flags: preserve-locale
+estimated_duration: 1.0
+depends: ethernet/wol_S3_auto_{{ interface }}
+
+id: ethernet/wol_S5_auto_{{ interface }}
+template-id: ethernet/wol_S5_auto_interface
+category_id: com.canonical.plainbox::ethernet
+unit: template
+template-resource: device
+template-engine: jinja2
+template-filter: device.category == 'NETWORK' and device.mac != 'UNKNOWN'
+_summary: Wake on LAN (WOL) automatic test from S5 - {{ interface }}
+plugin: shell
+environ: SERVER_WAKE_ON_LAN WAKE_ON_LAN_DELAY WAKE_ON_LAN_RETRY PLAINBOX_SESSION_SHARE
+imports: from com.canonical.plainbox import manifest
+requires:
+ manifest.has_ethernet_adapter == 'True'
+ manifest.has_ethernet_wake_on_lan_support== 'True'
+command:
+ wol_client.py --interface {{ interface }} --target $SERVER_WAKE_ON_LAN --delay $WAKE_ON_LAN_DELAY --retry $WAKE_ON_LAN_RETRY --waketype g --powertype s5  --timestamp_file "$PLAINBOX_SESSION_SHARE"/{{ interface }}_s5_timestamp
+user: root
+estimated_duration: 600
+flags: preserve-locale
+
+id: ethernet/wol_S5_auto_{{ interface }}_poweroff
+template-id: ethernet/wol_S5_auto_interface_poweroff
+category_id: com.canonical.plainbox::ethernet
+_summary: Perform power off for wake-on-lan S5 tests
+_description: power off the system for the s5 tests
+unit: template
+template-resource: device
+template-engine: jinja2
+template-filter: device.category == 'NETWORK' and device.mac != 'UNKNOWN'
+plugin: shell
+environ: SERVER_WAKE_ON_LAN WAKE_ON_LAN_DELAY WAKE_ON_LAN_RETRY PLAINBOX_SESSION_SHARE
+imports: from com.canonical.plainbox import manifest
+requires:
+ manifest.has_ethernet_adapter == 'True'
+ manifest.has_ethernet_wake_on_lan_support== 'True'
+command:
+  shutdown now
+user: root
+flags: preserve-locale noreturn
+depends: ethernet/wol_S5_auto_{{ interface }}
+after: ethernet/wol_S5_auto_{{ interface }}
+_purpose: Enter sleep mode after a configurable delay.
+
+id: ethernet/wol_S5_auto_{{ interface }}_result_check
+template-id: ethernet/wol_S5_auto_interface_result_check
+category_id: com.canonical.plainbox::ethernet
+unit: template
+template-resource: device
+template-engine: jinja2
+template-filter: device.category == 'NETWORK' and device.mac != 'UNKNOWN'
+_summary: Resutl check for Wake on LAN (WOL) automatic test from S5 - {{ interface }}
+_purpose: Check the kernel log to see if system waked up by Wake on lan.
+template-unit: job
+plugin: shell
+environ: LD_LIBRARY_PATH
+command:
+  sleep 30
+  wol_check.py --interface {{ interface }} --delay $WAKE_ON_LAN_DELAY --retry $WAKE_ON_LAN_RETRY --powertype s5 --timestamp_file "$PLAINBOX_SESSION_SHARE"/{{ interface }}_s5_timestamp
+user: root
+flags: preserve-locale
+estimated_duration: 1.0
+depends: ethernet/wol_S5_auto_{{ interface }}_poweroff
+after: ethernet/wol_S5_auto_{{ interface }}_poweroff

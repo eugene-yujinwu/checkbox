@@ -275,7 +275,8 @@ def main():
     write_timestamp(args.timestamp_file)
 
     # s3 or s5 the system
-    s3_or_s5_system(args.powertype)
+    if args.powertype != "s5":
+        s3_or_s5_system(args.powertype)
 
 
 if __name__ == "__main__":
